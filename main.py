@@ -1,67 +1,58 @@
-from aiogram import Dispatcher, Bot, executor, types
-from aiogram.contrib.fsm_storage.memory import MemoryStorage
+from aiogram import Router, Bot, types, F, Dispatcher
+from aiogram.filters.command import Command, CommandObject
 
-from states import NotApproved, Approved
+#import admin
 
 from Database import database as db
-import markups as mks
+#import markups as mks
 import config
 
-import gpt
+#import gpt
+import asyncio
+
 
 bot = Bot(token=config.BOT_TOKEN)
-storage = MemoryStorage()
-dp = Dispatcher(bot, storage=storage)
+router = Router()
+dp = Dispatcher()
+dp.include_router(router)
 
-# Функция инициализирующая БД
+
+# Инициализация БД при запуске бота
 async def on_startup(_):
     await db.init_db()
 
-# Хендлер, который срабатывает при вводе пользователем "/start"
-@dp.message_handler(commands=['start'], state='*')
-async def command_start(message: types.Message):
 
-    # Сбор данных о пользователе
+
+@router.message(Command('start'))
+async def command_start(message: types.Message):
     user_id = message.from_user.id
     username = message.from_user.username
 
-    await NotApproved.default.set()
-
-    # Вызов функции создания профиля (передачи данных в БД)
-    await db.create_profile(user_id, username)
-
-    approve_check = db.check_approved(username)
-
-    if approve_check == 1:
-
-        # Приветственное сообщение для пользователя с доступом
-        welcomeText = (f'Добро пожаловать в {config.BOT_NAME}! Вы можете познать все прелести '
-                       f'современной нейросети!')
-
-        await Approved.default.set()
-
-        await bot.send_message(message.from_user.id, welcomeText,
-                               reply_markup=mks.start_menu)
-
-    if approve_check == 0:
-
-        # Приветственное сообщение для пользователя без доступа
-        welcomeText = (f'Добро пожаловать в {config.BOT_NAME}! К сожалению, у Вас нет доступа.\n'
-                       f'Обратитесь к @{config.ADMIN}')
-
+    '''
+    Проверка на доступ к возможностям бота.
+    Функция create_profile возвращает 0, если пользователя не было в БД, иначе вернет его approved
+    Допуск есть, если approved = 0
+    '''
+    if await db.create_profile(user_id, username):
+        welcomeText = (f'Приветствую! Вы можете познать все прелести современной нейросети!')
+        await bot.send_message(message.from_user.id, welcomeText)
+    else:
+        welcomeText = (f'Приветствую! К сожалению, у Вас нет доступа.\nОбратитесь к @{config.ADMIN}')
         await bot.send_message(message.from_user.id, welcomeText)
 
 
 # Хендлер, который срабатывает при вводе пользователем "/admin"
-@dp.message_handler(commands=['admin'], state = '*')
-async def admin(message: types.Message):
-
+@router.message(Command('admin'))
+async def command_start(message: types.Message ):
+    user_id = message.from_user.id
+    username = message.from_user.username
     # Проверка на наличие прав администратора
-    await db.check_admin(bot, dp, message.from_user.username, message.from_user.id)
+    if await db.check_admin(user_id, username):
+        admin.admin(bot, router, user_id, db)
 
 
-@dp.callback_query_handler(lambda c: c.data == 'text', state = '*')
-async def main_menu(callback_query: types.CallbackQuery):
+@router.callback_query(F.data == 'text')
+async def main_menu(callback_query: types.callback_query):
     await bot.answer_callback_query(callback_query.id)
 
     await callback_query.message.answer('Введите свой вопрос.')
@@ -69,8 +60,8 @@ async def main_menu(callback_query: types.CallbackQuery):
     await Approved.text.set()
 
 
-@dp.callback_query_handler(lambda c: c.data == 'image', state='*')
-async def main_menu(callback_query: types.CallbackQuery):
+@router.callback_query(F.data == 'image')
+async def main_menu(callback_query: types.callback_query):
     await bot.answer_callback_query(callback_query.id)
 
     await callback_query.message.answer('Напишите описание желаемой картинки.')
@@ -78,7 +69,7 @@ async def main_menu(callback_query: types.CallbackQuery):
     await Approved.image.set()
 
 
-@dp.message_handler(state=Approved.text)
+@router.message()
 async def get_text(message: types.Message):
 
     response_message = await bot.send_message(message.from_user.id, 'Ожидание ответа...')
@@ -90,7 +81,7 @@ async def get_text(message: types.Message):
     await bot.send_message(message.from_user.id, 'Продолжим?', reply_markup=mks.start_menu)
 
 
-@dp.message_handler(state=Approved.image)
+@router.message()
 async def get_text(message: types.Message):
 
     response_message = await bot.send_message(message.from_user.id, 'Ожидание ответа...')
@@ -111,7 +102,11 @@ async def get_text(message: types.Message):
 
 
 
+async def main():
+    await db.init_db()
+    await dp.start_polling(bot)
+
+
+
 if __name__ == '__main__':
-    executor.start_polling(dp,
-                        skip_updates=True,
-                        on_startup=on_startup)
+    asyncio.run(main())
