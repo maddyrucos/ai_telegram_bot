@@ -1,4 +1,5 @@
 from dotenv import load_dotenv
+import logging
 import os
 
 load_dotenv()
@@ -8,4 +9,6 @@ ADMIN = os.getenv('ADMIN') # admin username
 
 # API-KEYS FOR AI
 OPENAI_TOKEN = os.getenv('OPENAI_TOKEN')
-MISTAL_TOKEN = os.getenv('MISTRAL_TOKEN')
+MISTRAL_TOKEN = os.getenv('MISTRAL_TOKEN')
+
+logging.basicConfig(filename='bot.logs', filemode='a', level=0)

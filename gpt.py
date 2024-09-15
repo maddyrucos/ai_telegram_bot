@@ -38,11 +38,3 @@ def generate_image(prompt, username):
 
     file_name += '.png'
     return str(file_name)
-
-if __name__ == '__main__':
-
-    image_data = b64decode(response['data'][0]['b64_json'])
-    file_name = '_'.join(prompt.split(' '))
-
-    with open(f'{file_name}.png', 'wb') as file:
-        file.write(image_data)

@@ -1,6 +1,5 @@
 from aiogram import types, Router, F
-from aiogram.utils import exceptions
-from aiogram.filters.command import Command
+
 
 import states
 from openpyxl import Workbook
@@ -12,12 +11,12 @@ admin = Router()
 
 
 #Рассылка сообщения всем пользователям
-@admin.callback_query(F.data='mailing', states.Admin.default)
+@admin.callback_query(F.data=='mailing', states.Admin.default)
 async def start(callback_query: types.CallbackQuery):
     await callback_query.message.answer('Введите текст рассылки:')
 
 
-@admin.message(content_types=['text'], state = Admin.sending_message) #принимаем сообщение, действует только при состоянии Admin.sending_message
+@admin.message(content_types=['text'], state = states.Admin.default) #принимаем сообщение, действует только при состоянии Admin.sending_message
 async def get_text(message: types.Message):
     text = message.text #присваиваем текст сообщения от пользователя (администратора) в переменную, которую передадим как текст сообщения бота
     cur.execute('SELECT user_id FROM users') #выделяем всех пользователей из базы данных

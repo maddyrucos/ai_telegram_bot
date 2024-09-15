@@ -2,7 +2,7 @@ from aiogram import Router, Bot, types, F, Dispatcher
 from aiogram.filters.command import Command
 from aiogram.fsm.context import FSMContext
 
-from admin import admin
+#from admin import admin
 
 import states
 
@@ -11,6 +11,7 @@ import markups as mks
 import config
 
 #import gpt
+import mistral
 import asyncio
 
 
@@ -18,7 +19,7 @@ bot = Bot(token=config.BOT_TOKEN)
 router = Router()
 dp = Dispatcher()
 dp.include_router(router)
-dp.include_router(admin)
+#dp.include_router(admin)
 
 
 # Инициализация БД при запуске бота
@@ -60,10 +61,8 @@ async def command_start(message: types.Message):
 @router.message(states.Approvement.approved)
 async def get_text(message: types.Message, state: FSMContext):
     response_message = await bot.send_message(message.from_user.id, 'Ожидание ответа...')
-    from time import sleep
-    sleep(5)
-    #chat_gpt_response = gpt.generate_response(message.text)
-    await response_message.edit_text('Ответ')
+    ai_response = await mistral.get_response(message.text)
+    await response_message.edit_text(ai_response)
 
 
 @router.callback_query(F.data == 'image', states.Approvement.approved)
