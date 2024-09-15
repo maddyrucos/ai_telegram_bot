@@ -2,7 +2,8 @@ from aiogram import Router, Bot, types, F, Dispatcher
 from aiogram.filters.command import Command
 from aiogram.fsm.context import FSMContext
 
-#import admin
+from admin import admin
+
 import states
 
 from Database import database as db
@@ -17,6 +18,7 @@ bot = Bot(token=config.BOT_TOKEN)
 router = Router()
 dp = Dispatcher()
 dp.include_router(router)
+dp.include_router(admin)
 
 
 # Инициализация БД при запуске бота
