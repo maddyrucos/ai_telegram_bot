@@ -4,6 +4,8 @@ import os
 load_dotenv()
 
 BOT_TOKEN = os.getenv('BOT_TOKEN')
+ADMIN = os.getenv('ADMIN') # admin username
+
+# API-KEYS FOR AI
 OPENAI_TOKEN = os.getenv('OPENAI_TOKEN')
-ADMIN = os.getenv('ADMIN') # admin id
-BOT_NAME = os.getenv('BOT_NAME') #
+MISTAL_TOKEN = os.getenv('MISTRAL_TOKEN')
