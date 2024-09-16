@@ -7,5 +7,6 @@ class Approvement(StatesGroup):
 
 class Admin(StatesGroup):
     default = State()
+    mailing = State()
     adding_user = State()
     sending_message = State()

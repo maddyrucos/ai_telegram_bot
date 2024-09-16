@@ -1,25 +1,25 @@
-from aiogram import Router, Bot, types, F, Dispatcher
+from aiogram import Router, types, F, Dispatcher
 from aiogram.filters.command import Command
 from aiogram.fsm.context import FSMContext
 
-#from admin import admin
+from admin import admin
 
 import states
 
 from Database import database as db
 import markups as mks
+from config import bot
 import config
 
-#import gpt
-import mistral
+#from AI import gpt
+from AI import mistral
 import asyncio
 
 
-bot = Bot(token=config.BOT_TOKEN)
 router = Router()
 dp = Dispatcher()
 dp.include_router(router)
-#dp.include_router(admin)
+dp.include_router(admin)
 
 
 # Инициализация БД при запуске бота
@@ -50,12 +50,16 @@ async def command_start(message: types.Message, state: FSMContext):
 
 
 @router.message(Command('admin'))
-async def command_start(message: types.Message):
+async def command_start(message: types.Message, state: FSMContext):
     user_id = message.from_user.id
     username = message.from_user.username
     # Проверка на наличие прав администратора
     if await db.check_admin(user_id, username):
-        admin.admin(bot, router, user_id, db)
+        #admin.admin(bot, router, user_id, db)
+        await state.set_state(states.Admin.default)
+        await message.answer('Админ меню', reply_markup=mks.admin_menu)
+    else:
+        await message.answer('У вас нет доступа!')
 
 
 @router.message(states.Approvement.approved)

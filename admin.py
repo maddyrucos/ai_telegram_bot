@@ -1,44 +1,38 @@
 from aiogram import types, Router, F
+from aiogram.fsm.context import FSMContext
 
-
-import states
 from openpyxl import Workbook
 import asyncio
 
+import Database.database as db
 import markups as mks
+import states
+
+from config import bot
 
 admin = Router()
 
 
 #Рассылка сообщения всем пользователям
 @admin.callback_query(F.data=='mailing', states.Admin.default)
-async def start(callback_query: types.CallbackQuery):
+async def start(callback_query: types.CallbackQuery, state: FSMContext):
     await callback_query.message.answer('Введите текст рассылки:')
+    await state.set_state(states.Admin.mailing)
 
 
-@admin.message(content_types=['text'], state = states.Admin.default) #принимаем сообщение, действует только при состоянии Admin.sending_message
-async def get_text(message: types.Message):
-    text = message.text #присваиваем текст сообщения от пользователя (администратора) в переменную, которую передадим как текст сообщения бота
-    cur.execute('SELECT user_id FROM users') #выделяем всех пользователей из базы данных
-    user = cur.fetchall() #помещаем всех пользователей из бд в переменную
-    for row in user: #для каждого ряда из списка пользователей
-        #создаем исключение с рядом возможных ошибок
+@admin.message(states.Admin.mailing)
+async def get_text(message: types.Message, state: FSMContext):
+    users = db.get_users()
+    for user in users:
         try:
-            await bot.send_message(row[0], text)
-        except exceptions.BotBlocked:
-            print(f"Пользователь {user} заблокировал этого бота")
-        except exceptions.ChatNotFound:
-            print(f"Чат пользователя {user} не найден")
-        except exceptions.RetryAfter as e:
-            print(f"Апи отправило слишком много запросов, нужно немного подождать {e.timeout} секунд")
-            await asyncio.sleep(e.timeout)
-        except exceptions.TelegramAPIError:
-            print(f"Ошибка Telegram API для пользователя {user}")
+            await bot.send_message(chat_id=user[0], text=message.text)
+        except Exception as e:
+            print(user[0], e.args)
 
-    await Admin.default.set() #возвращаем обычное состояние админа, чтобы сообщения не дублировались всем пользователям
-    await bot.send_message(message.from_user.id, 'Сообщение отправлено всем пользователям', reply_markup=mks.to_menu_markup)
+    await state.set_state(states.Admin.default) #возвращаем обычное состояние админа, чтобы сообщения не дублировались всем пользователям
+    await bot.send_message(message.from_user.id, 'Сообщение отправлено всем пользователям', reply_markup=mks.to_menu_only)
 
-
+'''
 #выгрузка базы данных
 @admin.callback_query(lambda c: c.data and 'download' in c.data, state = Admin.default)
 async def process_callback_button1(callback_query: types.CallbackQuery):
@@ -76,4 +70,4 @@ async def get_username(message: types.Message):
     # Изменение пункта approved (отвечает за доступ) на 1 (допуск) там, где username = полученному выше
     cur.execute(f'UPDATE users SET approved = "1" WHERE username == "{text}"')
     db.commit()
-    await message.answer('Пользователь добавлен', reply_markup=mks.admin_menu)
+    await message.answer('Пользователь добавлен', reply_markup=mks.admin_menu)'''

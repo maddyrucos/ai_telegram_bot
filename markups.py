@@ -16,10 +16,10 @@ def create_main_menu(is_approved):
     else:
         builder.row(InlineKeyboardButton(text='Запросить доступ', url='t.me/madeezy'))
     return builder.as_markup()
-'''
+
 # -- Администратор --
 
-admin_add_user = InlineKeyboardButton('Добавить пользователя', callback_data='add_user')
-admin_send = InlineKeyboardButton('Отправить сообщение', callback_data='send_button')
-admin_download = InlineKeyboardButton('Выгрузить базу', callback_data='download')
-admin_menu = InlineKeyboardMarkup(row_width=1).add(admin_add_user, admin_send, admin_download)'''
+admin_add_user = InlineKeyboardButton(text='Добавить пользователя', callback_data='add_user')
+admin_mailing = InlineKeyboardButton(text='Рассылка', callback_data='mailing')
+#admin_download = InlineKeyboardButton('Выгрузить базу', callback_data='download')
+admin_menu = InlineKeyboardMarkup(inline_keyboard=[[admin_mailing], [admin_add_user]])

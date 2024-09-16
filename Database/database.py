@@ -41,7 +41,11 @@ async def create_profile(user_id, username):
 
 # Проверка на админа в БД по username
 async def check_admin(username):
-    if cur.execute(f"SELECT username FROM admins WHERE username == '{username}'"):
+    if cur.execute(f"SELECT 1 FROM admins WHERE username == '{username}'").fetchone():
         return 1
     else:
         return 0
+
+
+async def get_users():
+    return cur.execute('SELECT user_id FROM users').fetchall()
