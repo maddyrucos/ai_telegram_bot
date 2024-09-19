@@ -54,7 +54,7 @@ async def command_start(message: types.Message, state: FSMContext):
     user_id = message.from_user.id
     username = message.from_user.username
     # Проверка на наличие прав администратора
-    if await db.check_admin(user_id, username):
+    if await db.check_admin(username):
         #admin.admin(bot, router, user_id, db)
         await state.set_state(states.Admin.default)
         await message.answer('Админ меню', reply_markup=mks.admin_menu)

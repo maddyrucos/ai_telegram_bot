@@ -48,4 +48,4 @@ async def check_admin(username):
 
 
 async def get_users():
-    return cur.execute('SELECT user_id FROM users').fetchall()
+    return cur.execute('SELECT * FROM users').fetchall()

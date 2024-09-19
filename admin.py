@@ -13,18 +13,24 @@ from config import bot
 admin = Router()
 
 
-#Рассылка сообщения всем пользователям
+'''
+Рассылка сообщения всем пользователям из БД
+Доступно только админу после проверки
+'''
+# Запрос сообщения. Состояние меняется на принимающее сообщение
 @admin.callback_query(F.data=='mailing', states.Admin.default)
 async def start(callback_query: types.CallbackQuery, state: FSMContext):
     await callback_query.message.answer('Введите текст рассылки:')
     await state.set_state(states.Admin.mailing)
 
 
+# Текст сообщения обработался и отправляется пользователям. Для каждого пользователя происходит try
 @admin.message(states.Admin.mailing)
 async def get_text(message: types.Message, state: FSMContext):
-    users = db.get_users()
+    users = await db.get_users()
     for user in users:
         try:
+            print(user)
             await bot.send_message(chat_id=user[0], text=message.text)
         except Exception as e:
             print(user[0], e.args)
@@ -32,22 +38,20 @@ async def get_text(message: types.Message, state: FSMContext):
     await state.set_state(states.Admin.default) #возвращаем обычное состояние админа, чтобы сообщения не дублировались всем пользователям
     await bot.send_message(message.from_user.id, 'Сообщение отправлено всем пользователям', reply_markup=mks.to_menu_only)
 
-'''
-#выгрузка базы данных
-@admin.callback_query(lambda c: c.data and 'download' in c.data, state = Admin.default)
+
+# Получение списка с пользователями в формате xlsx
+@admin.callback_query(F.data=='get_db', states.Admin.default)
 async def process_callback_button1(callback_query: types.CallbackQuery):
-    await bot.answer_callback_query(callback_query.id)
-    cur.execute('SELECT * FROM users')  # выбираем всю таблицу users
-    data = cur.fetchall()  # передаем
-    wb = Workbook()  # создаем воркбук для конвертирования бд
+    users = await db.get_users()
+    wb = Workbook()
     ws = wb.active
-    for row in data:
-        ws.append(row)
+    for user in users:
+        ws.append(user)
     wb.save('users.xlsx')
-    with open('users.xlsx', "rb") as file:
-        await bot.send_document(callback_query.from_user.id, file, reply_markup=mks.admin_menu)
+    database = types.FSInputFile('users.xlsx')
+    await bot.send_document(callback_query.from_user.id, database)
 
-
+'''
 #возврат в меню админа
 @admin.callback_query(lambda c: c.data and 'admin' in c.data, state = Admin.default)
 async def process_callback_button1(callback_query: types.CallbackQuery):

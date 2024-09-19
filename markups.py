@@ -21,5 +21,5 @@ def create_main_menu(is_approved):
 
 admin_add_user = InlineKeyboardButton(text='Добавить пользователя', callback_data='add_user')
 admin_mailing = InlineKeyboardButton(text='Рассылка', callback_data='mailing')
-#admin_download = InlineKeyboardButton('Выгрузить базу', callback_data='download')
-admin_menu = InlineKeyboardMarkup(inline_keyboard=[[admin_mailing], [admin_add_user]])
+admin_getdb = InlineKeyboardButton(text='Скачать БД', callback_data='get_db')
+admin_menu = InlineKeyboardMarkup(inline_keyboard=[[admin_mailing], [admin_add_user], [admin_getdb]])
