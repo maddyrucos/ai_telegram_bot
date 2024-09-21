@@ -41,10 +41,13 @@ async def command_start(message: types.Message, state: FSMContext):
         welcomeText = (f'Приветствую! Вы можете познать все прелести современной нейросети!\n'
                        f'Просто напишите свой вопрос в чат.')
         await state.set_state(states.Approvement.approved)
-        await bot.send_message(message.from_user.id, welcomeText, reply_markup=mks.create_main_menu(True))
+        await bot.send_message(message.from_user.id, welcomeText,
+                               reply_markup=None)
+                               #mks.create_main_menu(True))
     else:
         welcomeText = (f'Приветствую! К сожалению, у Вас нет доступа.\nОбратитесь к @{config.ADMIN}, прислав свой /id')
-        await bot.send_message(message.from_user.id, welcomeText, reply_markup=mks.create_main_menu(False))
+        await bot.send_message(message.from_user.id, welcomeText,
+                               reply_markup=mks.create_main_menu(False))
 
 
 # Команда для открытия меню админа
@@ -54,7 +57,8 @@ async def command_admin(message: types.Message, state: FSMContext):
     # Проверка на наличие прав администратора
     if await db.check_admin(username):
         await state.set_state(states.Admin.default)
-        await message.answer('Админ меню', reply_markup=mks.admin_menu)
+        await message.answer('Админ меню\n'
+                             'Для возвращения нажмите /start', reply_markup=mks.admin_menu)
     else:
         await message.answer('У вас нет доступа!')
 
@@ -71,16 +75,18 @@ async def get_text(message: types.Message, state: FSMContext):
 # Пока не работает (нет доступа к нейросети)
 @router.callback_query(F.data == 'image', states.Approvement.approved)
 async def main_menu(callback_query: types.callback_query, state: FSMContext):
+    await callback_query.message.answer('В данный момент функция недоступна')
+
     '''await bot.answer_callback_query(callback_query.id)
     await callback_query.message.answer('Напишите описание желаемой картинки.')
     await state.set_state(states.Approvement.image)'''
-    await callback_query.message.answer('В данный момент функция недоступна')
+
 
 
 # Команда для получения пользователем своего telegram id
 @router.message(Command('id'))
 async def command_start(message: types.Message, state: FSMContext):
-    await message.answer(f'Ваш ID: {message.from_user.id}')
+    await message.answer(f'{message.from_user.id}')
 
 
 async def main():

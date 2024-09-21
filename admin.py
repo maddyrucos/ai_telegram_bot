@@ -29,7 +29,6 @@ async def get_text(message: types.Message, state: FSMContext):
     users = await db.get_users()
     for user in users:
         try:
-            print(user)
             await bot.send_message(chat_id=user[0], text=message.text)
         except Exception as e:
             print(user[0], e.args)
@@ -59,10 +58,25 @@ async def get_user_id(callback_query: types.CallbackQuery, state: FSMContext):
     await state.set_state(states.Admin.adding_user)
 
 
+# Получение id пользователя для запрета использования ai
+@admin.callback_query(F.data=='remove_user', states.Admin.default)
+async def get_user_id(callback_query: types.CallbackQuery, state: FSMContext):
+    await callback_query.message.answer('Введите id')
+    # Передается состояние добавления пользователя
+    await state.set_state(states.Admin.removing_user)
+
+
 # Добавление разрешения пользователю в БД через id
 @admin.message(states.Admin.adding_user)
-async def add_user(message: types.Message):
-    if await db.add_user(message.text):
-        await message.answer('Пользователь добавлен!')
-    else:
-        await message.answer('Пользователь не добавлен. Произошла ошибка')
+async def add_user(message: types.Message, state: FSMContext):
+    await db.add_user(message.text)
+    await message.answer('Пользователь добавлен!')
+    await state.set_state(states.Admin.default)
+
+
+# Удаление разрешения пользователю в БД через id
+@admin.message(states.Admin.removing_user)
+async def remove_user(message: types.Message, state: FSMContext):
+    await db.remove_user(message.text)
+    await message.answer('Пользователь удален!')
+    await state.set_state(states.Admin.default)

@@ -61,6 +61,15 @@ async def add_user(id):
         return 0
 
 
+async def remove_user(id):
+    try:
+        cur.execute(f'UPDATE users SET "approved"="0" WHERE "user_id"=="{id}"')
+        db.commit()
+        return 1
+    except:
+        return 0
+
+
 # Получение полного списка пользователей
 async def get_users():
     return cur.execute('SELECT * FROM users').fetchall()
