@@ -1,14 +1,13 @@
 from aiogram import types, Router, F
 from aiogram.fsm.context import FSMContext
 
-from openpyxl import Workbook
-import asyncio
-
 import Database.database as db
 import markups as mks
 import states
 
 from config import bot
+
+from openpyxl import Workbook
 
 admin = Router()
 
@@ -19,7 +18,7 @@ admin = Router()
 '''
 # Запрос сообщения. Состояние меняется на принимающее сообщение
 @admin.callback_query(F.data=='mailing', states.Admin.default)
-async def start(callback_query: types.CallbackQuery, state: FSMContext):
+async def mailing(callback_query: types.CallbackQuery, state: FSMContext):
     await callback_query.message.answer('Введите текст рассылки:')
     await state.set_state(states.Admin.mailing)
 
@@ -41,7 +40,7 @@ async def get_text(message: types.Message, state: FSMContext):
 
 # Получение списка с пользователями в формате xlsx
 @admin.callback_query(F.data=='get_db', states.Admin.default)
-async def process_callback_button1(callback_query: types.CallbackQuery):
+async def get_db(callback_query: types.CallbackQuery):
     users = await db.get_users()
     wb = Workbook()
     ws = wb.active
@@ -51,27 +50,19 @@ async def process_callback_button1(callback_query: types.CallbackQuery):
     database = types.FSInputFile('users.xlsx')
     await bot.send_document(callback_query.from_user.id, database)
 
-'''
-#возврат в меню админа
-@admin.callback_query(lambda c: c.data and 'admin' in c.data, state = Admin.default)
-async def process_callback_button1(callback_query: types.CallbackQuery):
-    await bot.send_message(user_id, 'Меню администратора', reply_markup=mks.admin_menu)
 
-
-@admin.callback_query(lambda c: c.data and 'add_user' in c.data, state=Admin.default)
-async def process_callback_button1(callback_query: types.CallbackQuery):
-    await bot.answer_callback_query(callback_query.id)
-    await bot.send_message(user_id, 'Введите имя пользователя')
+# Получение id пользователя для разрешения использования ai
+@admin.callback_query(F.data=='add_user', states.Admin.default)
+async def get_user_id(callback_query: types.CallbackQuery, state: FSMContext):
+    await callback_query.message.answer('Введите id')
     # Передается состояние добавления пользователя
-    await Admin.adding_user.set()
+    await state.set_state(states.Admin.adding_user)
 
 
-# принимаем сообщение, действует только при состоянии Admin.sending_message
-@admin.message(content_types=['text'], state=Admin.adding_user)
-async def get_username(message: types.Message):
-    # Получение текста сообщения с никнеймом
-    text = message.text
-    # Изменение пункта approved (отвечает за доступ) на 1 (допуск) там, где username = полученному выше
-    cur.execute(f'UPDATE users SET approved = "1" WHERE username == "{text}"')
-    db.commit()
-    await message.answer('Пользователь добавлен', reply_markup=mks.admin_menu)'''
+# Добавление разрешения пользователю в БД через id
+@admin.message(states.Admin.adding_user)
+async def add_user(message: types.Message):
+    if await db.add_user(message.text):
+        await message.answer('Пользователь добавлен!')
+    else:
+        await message.answer('Пользователь не добавлен. Произошла ошибка')

@@ -29,6 +29,10 @@ async def init_db():
     db.commit()
 
 
+'''
+Создание профиля в БД + проверка на доступ к функциям ИИ.
+Подробнее расписано в main.py в комментарии к /start
+'''
 async def create_profile(user_id, username):
     user = cur.execute(f"SELECT * FROM users WHERE user_id == '{user_id}'").fetchone()
     if not user:
@@ -47,5 +51,16 @@ async def check_admin(username):
         return 0
 
 
+# Добавление пользователю возможности пользоваться нейросетью
+async def add_user(id):
+    try:
+        cur.execute(f'UPDATE users SET "approved"="1" WHERE "user_id"=="{id}"')
+        db.commit()
+        return 1
+    except:
+        return 0
+
+
+# Получение полного списка пользователей
 async def get_users():
     return cur.execute('SELECT * FROM users').fetchall()
